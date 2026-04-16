@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -13,6 +14,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Link, useNavigate } from "react-router-dom"
+import { supabase } from "@/lib/supabase"
+import { Loader2 } from "lucide-react"
 
 const formSchema = z.object({
     email: z.string().email({
@@ -25,6 +28,9 @@ const formSchema = z.object({
 
 export default function Login() {
     const navigate = useNavigate()
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -33,9 +39,22 @@ export default function Login() {
         },
     })
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        // In a real app, we would validate credentials here
-        console.log(values)
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        setLoading(true)
+        setError(null)
+        
+        const { error } = await supabase.auth.signInWithPassword({
+            email: values.email,
+            password: values.password,
+        })
+
+        setLoading(false)
+
+        if (error) {
+            setError(error.message)
+            return
+        }
+
         navigate("/dashboard")
     }
 
@@ -50,6 +69,11 @@ export default function Login() {
             <CardContent>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        {error && (
+                            <div className="p-3 text-sm text-white bg-destructive rounded-md">
+                                {error}
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="email"
@@ -76,7 +100,10 @@ export default function Login() {
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit" className="w-full">Sign In</Button>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Sign In
+                        </Button>
                     </form>
                 </Form>
             </CardContent>

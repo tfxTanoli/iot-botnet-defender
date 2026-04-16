@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
     Table,
@@ -8,21 +9,50 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-
-const historyData = [
-    { date: "2023-10-27", time: "10:30 AM", user: "Admin", action: "Export Data", details: "Downloaded results.csv" },
-    { date: "2023-10-27", time: "10:15 AM", user: "Admin", action: "Run Detection", details: "Processed iot_traffic.csv" },
-    { date: "2023-10-27", time: "10:00 AM", user: "Admin", action: "Upload Dataset", details: "Uploaded iot_traffic.csv (15MB)" },
-    { date: "2023-10-26", time: "09:45 AM", user: "System", action: "Auto-Update", details: "Model weights updated" },
-    { date: "2023-10-25", time: "04:20 PM", user: "User1", action: "Login", details: "Successful login from 192.168.1.5" },
-];
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 
 export default function History() {
+    const { user } = useAuth();
+    const [historyData, setHistoryData] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (!user) return;
+            try {
+                setIsLoading(true);
+                const { data, error } = await supabase
+                    .from('activity_history')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+                
+                if (data) {
+                    setHistoryData(data);
+                }
+            } catch (error) {
+                console.error("Error fetching history:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchHistory();
+    }, [user]);
+
     return (
         <div className="flex flex-col gap-6">
             <PageHeader heading="Activity History" description="Audit log of system actions and user activities." />
 
-            <div className="rounded-md border bg-card">
+            <div className="rounded-md border bg-card relative min-h-[300px]">
+                {isLoading ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : null}
+                
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -34,20 +64,29 @@ export default function History() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {historyData.map((row, index) => (
-                            <TableRow key={index}>
-                                <TableCell>{row.date}</TableCell>
-                                <TableCell className="text-muted-foreground">{row.time}</TableCell>
-                                <TableCell>{row.user}</TableCell>
-                                <TableCell>
-                                    <Badge variant="outline">{row.action}</Badge>
+                        {!isLoading && historyData.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                    No activity history available.
                                 </TableCell>
-                                <TableCell>{row.details}</TableCell>
                             </TableRow>
-                        ))}
+                        ) : (
+                            historyData.map((row, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>{new Date(row.created_at).toLocaleDateString()}</TableCell>
+                                    <TableCell className="text-muted-foreground">{new Date(row.created_at).toLocaleTimeString()}</TableCell>
+                                    <TableCell>{user?.user_metadata?.full_name || 'User'}</TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">{row.action}</Badge>
+                                    </TableCell>
+                                    <TableCell>{row.details}</TableCell>
+                                </TableRow>
+                            ))
+                        )}
                     </TableBody>
                 </Table>
             </div>
         </div>
     );
 }
+
