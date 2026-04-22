@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,59 +22,55 @@ import { ShieldCheck, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 
+type ResultRow = {
+    id: string;
+    ip: string;
+    prediction: string;
+    confidence: number;
+    created_at: string;
+};
+
 export default function Results() {
     const { user } = useAuth();
-    const [resultsData, setResultsData] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [resultsData, setResultsData] = useState<ResultRow[]>([]);
+    const [isLoading, setIsLoading]     = useState(true);
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            if (!user) return;
-            try {
-                setIsLoading(true);
-                const { data, error } = await supabase
-                    .from('botnet_results') 
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .order('created_at', { ascending: false }); 
-                
-                if (data) {
-                    setResultsData(data);
-                }
-            } catch (err) {
-                console.error("Error fetching data:", err);
-            } finally {
-                setIsLoading(false);
-            }
+        if (!user) return;
+        const fetch = async () => {
+            setIsLoading(true);
+            const { data } = await supabase
+                .from("botnet_results")
+                .select("*")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false });
+            if (data) setResultsData(data as ResultRow[]);
+            setIsLoading(false);
         };
-
-        fetchUserData();
+        fetch();
     }, [user]);
 
-    // Compute stats from dynamic data
-    const totalRecords = resultsData.length;
-    const attacksDetected = resultsData.filter(r => r.prediction !== 'Normal').length;
-    const cleanTraffic = totalRecords - attacksDetected;
+    const total     = resultsData.length;
+    const malicious = resultsData.filter((r) => r.prediction === "MALICIOUS").length;
+    const normal    = total - malicious;
 
-    // Compute Pie Chart Data dynamic
-    const pieDataMap = resultsData.reduce((acc: any, row) => {
-        const pred = row.prediction || "Unknown";
-        acc[pred] = (acc[pred] || 0) + 1;
+    // pie chart — count by prediction label
+    const pieDataMap = resultsData.reduce<Record<string, number>>((acc, r) => {
+        const label = r.prediction || "Unknown";
+        acc[label]  = (acc[label] || 0) + 1;
         return acc;
     }, {});
 
     const colorMap: Record<string, string> = {
-        "Normal": "hsl(var(--primary))",
-        "DDoS Attack": "hsl(var(--destructive))",
-        "Botnet C&C": "hsl(var(--chart-4))",
-        "Brute Force": "hsl(var(--chart-5))",
-        "Unknown": "hsl(var(--muted-foreground))"
+        NORMAL:    "hsl(var(--primary))",
+        MALICIOUS: "hsl(var(--destructive))",
+        Unknown:   "hsl(var(--muted-foreground))",
     };
 
-    const pieData = Object.keys(pieDataMap).map(key => ({
-        name: key,
-        value: pieDataMap[key],
-        color: colorMap[key] || "hsl(var(--chart-2))"
+    const pieData = Object.entries(pieDataMap).map(([name, value]) => ({
+        name,
+        value,
+        color: colorMap[name] ?? "hsl(var(--chart-2))",
     }));
 
     if (isLoading) {
@@ -87,24 +83,35 @@ export default function Results() {
 
     return (
         <div className="flex flex-col gap-6 relative z-10">
-            <PageHeader heading="Botnet Detection Results" description={`Analysis results for ${user?.user_metadata?.full_name || 'User'}.`} />
+            <PageHeader
+                heading="Botnet Detection Results"
+                description={`Analysis results for ${user?.user_metadata?.full_name || "User"}.`}
+            />
 
             <div className="grid gap-4 md:grid-cols-3">
-                <StatCard title="Total Records" value={totalRecords.toString()} icon={CheckCircle} />
-                <StatCard title="Attacks Detected" value={attacksDetected.toString()} icon={AlertTriangle} trend={totalRecords > 0 ? `${((attacksDetected/totalRecords)*100).toFixed(1)}% rate` : "0% rate"} />
-                <StatCard title="Clean Traffic" value={cleanTraffic.toString()} icon={ShieldCheck} />
+                <StatCard title="Total Records"     value={total.toString()}     icon={CheckCircle} />
+                <StatCard
+                    title="Malicious Detected"
+                    value={malicious.toString()}
+                    icon={AlertTriangle}
+                    trend={total > 0 ? `${((malicious / total) * 100).toFixed(1)}% rate` : "0% rate"}
+                />
+                <StatCard title="Normal Traffic" value={normal.toString()} icon={ShieldCheck} />
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
+                {/* ── Pie chart ── */}
                 <Card className="md:col-span-1 glass-card">
                     <CardHeader>
-                        <CardTitle className="font-medium tracking-wide">Attack Distribution</CardTitle>
-                        <CardDescription>Breakdown of detected threats.</CardDescription>
+                        <CardTitle className="font-medium tracking-wide">
+                            Traffic Distribution
+                        </CardTitle>
+                        <CardDescription>Breakdown of detection outcomes.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {totalRecords === 0 ? (
+                        {total === 0 ? (
                             <div className="flex h-[250px] items-center justify-center text-muted-foreground text-sm">
-                                No threat details available.
+                                No data available. Upload a dataset first.
                             </div>
                         ) : (
                             <>
@@ -122,22 +129,32 @@ export default function Results() {
                                                 stroke="hsl(var(--card))"
                                                 strokeWidth={2}
                                             >
-                                                {pieData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                {pieData.map((entry, i) => (
+                                                    <Cell key={i} fill={entry.color} />
                                                 ))}
                                             </Pie>
                                             <Tooltip
-                                                contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                                itemStyle={{ color: 'hsl(var(--foreground))' }}
+                                                contentStyle={{
+                                                    backgroundColor: "hsl(var(--card))",
+                                                    borderRadius: "8px",
+                                                    border: "1px solid hsl(var(--border))",
+                                                }}
+                                                itemStyle={{ color: "hsl(var(--foreground))" }}
                                             />
                                         </PieChart>
                                     </ResponsiveContainer>
                                 </div>
                                 <div className="mt-4 space-y-3">
                                     {pieData.map((item) => (
-                                        <div key={item.name} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-muted/50 transition-colors">
+                                        <div
+                                            key={item.name}
+                                            className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-muted/50 transition-colors"
+                                        >
                                             <div className="flex items-center gap-3">
-                                                <div className="h-3 w-3 rounded-full shadow-md" style={{ backgroundColor: item.color }} />
+                                                <div
+                                                    className="h-3 w-3 rounded-full"
+                                                    style={{ backgroundColor: item.color }}
+                                                />
                                                 <span className="font-medium">{item.name}</span>
                                             </div>
                                             <span className="font-bold">{item.value}</span>
@@ -149,10 +166,13 @@ export default function Results() {
                     </CardContent>
                 </Card>
 
+                {/* ── Table ── */}
                 <Card className="md:col-span-2 glass-card">
                     <CardHeader>
-                        <CardTitle className="font-medium tracking-wide">Detailed Logs</CardTitle>
-                        <CardDescription>Recent traffic analysis records.</CardDescription>
+                        <CardTitle className="font-medium tracking-wide">Detection Logs</CardTitle>
+                        <CardDescription>
+                            Per-record predictions with confidence scores.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -167,23 +187,51 @@ export default function Results() {
                             </TableHeader>
                             <TableBody>
                                 {resultsData.length === 0 ? (
-                                     <TableRow>
-                                         <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                             No detection logs available.
-                                         </TableCell>
-                                     </TableRow>
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={5}
+                                            className="h-24 text-center text-muted-foreground"
+                                        >
+                                            No detection logs yet. Upload a dataset to get started.
+                                        </TableCell>
+                                    </TableRow>
                                 ) : (
                                     resultsData.map((row) => (
-                                        <TableRow key={row.id} className="hover:bg-muted/30 transition-colors">
-                                            <TableCell className="font-medium font-mono text-xs">{row.id.substring(0, 8)}</TableCell>
-                                            <TableCell className="font-mono text-xs">{row.ip}</TableCell>
-                                            <TableCell className="text-muted-foreground">{new Date(row.created_at).toLocaleString()}</TableCell>
+                                        <TableRow
+                                            key={row.id}
+                                            className="hover:bg-muted/30 transition-colors"
+                                        >
+                                            <TableCell className="font-mono text-xs">
+                                                {row.id.substring(0, 8)}
+                                            </TableCell>
+                                            <TableCell className="font-mono text-xs">
+                                                {row.ip}
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground text-sm">
+                                                {new Date(row.created_at).toLocaleString()}
+                                            </TableCell>
                                             <TableCell>
-                                                <Badge variant={row.prediction === "Normal" ? "secondary" : "destructive"} className="shadow-sm">
+                                                <Badge
+                                                    variant={
+                                                        row.prediction === "NORMAL"
+                                                            ? "secondary"
+                                                            : "destructive"
+                                                    }
+                                                >
                                                     {row.prediction}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-right font-medium text-emerald-500">{row.confidence}%</TableCell>
+                                            <TableCell className="text-right font-medium">
+                                                <span
+                                                    className={
+                                                        row.prediction === "NORMAL"
+                                                            ? "text-emerald-500"
+                                                            : "text-destructive"
+                                                    }
+                                                >
+                                                    {row.confidence}%
+                                                </span>
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 )}
