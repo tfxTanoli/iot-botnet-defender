@@ -182,14 +182,13 @@ export default function Results() {
                                     <TableHead>Source IP</TableHead>
                                     <TableHead>Timestamp</TableHead>
                                     <TableHead>Prediction</TableHead>
-                                    <TableHead className="text-right">Confidence</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {resultsData.length === 0 ? (
                                     <TableRow>
                                         <TableCell
-                                            colSpan={5}
+                                            colSpan={4}
                                             className="h-24 text-center text-muted-foreground"
                                         >
                                             No detection logs yet. Upload a dataset to get started.
@@ -220,17 +219,6 @@ export default function Results() {
                                                 >
                                                     {row.prediction}
                                                 </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right font-medium">
-                                                <span
-                                                    className={
-                                                        row.prediction === "NORMAL"
-                                                            ? "text-emerald-500"
-                                                            : "text-destructive"
-                                                    }
-                                                >
-                                                    {row.confidence}%
-                                                </span>
                                             </TableCell>
                                         </TableRow>
                                     ))

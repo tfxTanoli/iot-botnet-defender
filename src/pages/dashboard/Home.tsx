@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
-import { Activity, ShieldCheck, Database, FileWarning, Loader2 } from "lucide-react";
+import { ShieldCheck, Database, Cpu, TrendingUp, Loader2 } from "lucide-react";
 import {
     BarChart,
     Bar,
@@ -23,7 +23,8 @@ export default function DashboardHome() {
     const [stats, setStats] = useState({
         totalDatasets: 0,
         attacksDetected: 0,
-        activeThreats: 0,
+        totalRecords: 0,
+        detectionRate: "0.0",
     });
 
     useEffect(() => {
@@ -64,18 +65,21 @@ export default function DashboardHome() {
                     .from('botnet_results')
                     .select('*', { count: 'exact', head: true })
                     .eq('user_id', user.id)
-                    .neq('prediction', 'Normal');
-                
-                const { count: threatsCount } = await supabase
-                    .from('active_threats')
+                    .eq('prediction', 'MALICIOUS');
+
+                const { count: totalRecordsCount } = await supabase
+                    .from('botnet_results')
                     .select('*', { count: 'exact', head: true })
-                    .eq('user_id', user.id)
-                    .eq('status', 'active');
+                    .eq('user_id', user.id);
+
+                const malicious = attacksCount || 0;
+                const total     = totalRecordsCount || 0;
 
                 setStats({
-                    totalDatasets: datasetCount || 0,
-                    attacksDetected: attacksCount || 0,
-                    activeThreats: threatsCount || 0,
+                    totalDatasets:  datasetCount || 0,
+                    attacksDetected: malicious,
+                    totalRecords:   total,
+                    detectionRate:  total > 0 ? ((malicious / total) * 100).toFixed(1) : "0.0",
                 });
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
@@ -114,17 +118,17 @@ export default function DashboardHome() {
                     icon={ShieldCheck}
                 />
                 <StatCard
-                    title="Active Threats"
-                    value={stats.activeThreats.toString()}
-                    description="Require immediate attention"
-                    trend={stats.activeThreats > 0 ? "Action needed" : ""}
-                    icon={FileWarning}
+                    title="Total Records Analyzed"
+                    value={stats.totalRecords.toLocaleString()}
+                    description="Rows processed by the model"
+                    icon={Cpu}
                 />
                 <StatCard
-                    title="System Status"
-                    value="Healthy"
-                    description="All systems operational"
-                    icon={Activity}
+                    title="Detection Rate"
+                    value={`${stats.detectionRate}%`}
+                    description="Of all analyzed traffic"
+                    trend={stats.totalRecords > 0 ? "Malicious ratio" : ""}
+                    icon={TrendingUp}
                 />
             </div>
 

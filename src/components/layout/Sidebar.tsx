@@ -5,7 +5,6 @@ import {
     UploadCloud,
     Settings2,
     ShieldAlert,
-    Download,
     History,
     Activity
 } from "lucide-react";
@@ -31,11 +30,6 @@ export const sidebarItems = [
         title: "Detection Results",
         href: "/dashboard/results",
         icon: ShieldAlert,
-    },
-    {
-        title: "Export Data",
-        href: "/dashboard/export",
-        icon: Download,
     },
     {
         title: "Activity History",
