@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import {
     UploadCloud, FileText, X, CheckCircle, AlertTriangle, Loader2,
+    ShieldCheck, ShieldAlert, XCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -40,6 +41,25 @@ type AnalysisResponse = {
     results:     RowResult[];
 };
 
+type FeatureMatch = {
+    required:   string;
+    found:      string;
+    match_type: "exact" | "fuzzy";
+};
+
+type ValidationResult = {
+    filename:         string;
+    match_score:      number;
+    matched:          number;
+    total:            number;
+    is_valid:         boolean;
+    matched_features: FeatureMatch[];
+    missing_features: string[];
+    extra_columns:    string[];
+};
+
+type ValidationStatus = "idle" | "validating" | "valid" | "invalid" | "error";
+
 const SENSITIVITY_LABELS: Record<Sensitivity, { label: string; description: string }> = {
     high:   { label: "High",   description: "Flags more traffic — stricter detection" },
     medium: { label: "Medium", description: "Balanced (default)" },
@@ -52,13 +72,15 @@ export default function Upload() {
     const { user } = useAuth();
     const navigate  = useNavigate();
 
-    const [dragActive, setDragActive]     = useState(false);
-    const [file, setFile]                 = useState<File | null>(null);
-    const [sensitivity, setSensitivity]   = useState<Sensitivity>("medium");
-    const [isAnalyzing, setIsAnalyzing]   = useState(false);
-    const [statusMsg, setStatusMsg]       = useState("");
-    const [analysis, setAnalysis]         = useState<AnalysisResponse | null>(null);
-    const [error, setError]               = useState<string | null>(null);
+    const [dragActive, setDragActive]           = useState(false);
+    const [file, setFile]                       = useState<File | null>(null);
+    const [sensitivity, setSensitivity]         = useState<Sensitivity>("medium");
+    const [isAnalyzing, setIsAnalyzing]         = useState(false);
+    const [statusMsg, setStatusMsg]             = useState("");
+    const [analysis, setAnalysis]               = useState<AnalysisResponse | null>(null);
+    const [error, setError]                     = useState<string | null>(null);
+    const [validationStatus, setValidationStatus] = useState<ValidationStatus>("idle");
+    const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
 
     // ── drag / drop ──────────────────────────────────────────────────────────
     const handleDrag = (e: React.DragEvent) => {
@@ -89,6 +111,30 @@ export default function Upload() {
         setAnalysis(null);
         setError(null);
         setStatusMsg("");
+        setValidationResult(null);
+        setValidationStatus("validating");
+        validateFile(f);
+    };
+
+    // ── feature validation ───────────────────────────────────────────────────
+    const validateFile = async (f: File) => {
+        try {
+            const formData = new FormData();
+            formData.append("file", f);
+            const res = await fetch(`${API_BASE}/api/validate`, {
+                method: "POST",
+                body:   formData,
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ detail: "Validation failed." }));
+                throw new Error(err.detail || "Validation failed.");
+            }
+            const data: ValidationResult = await res.json();
+            setValidationResult(data);
+            setValidationStatus(data.is_valid ? "valid" : "invalid");
+        } catch {
+            setValidationStatus("error");
+        }
     };
 
     // ── save to Supabase ─────────────────────────────────────────────────────
@@ -169,6 +215,8 @@ export default function Upload() {
         }
     };
 
+    const canAnalyze = validationStatus === "valid" || validationStatus === "error";
+
     // ── render ───────────────────────────────────────────────────────────────
     return (
         <div className="flex flex-col gap-6">
@@ -190,7 +238,7 @@ export default function Upload() {
                         onDragOver={handleDrag}
                         onDrop={handleDrop}
                     >
-                                    {/* ── sensitivity selector (visible when no analysis yet) ── */}
+                        {/* ── sensitivity selector (visible when no analysis yet) ── */}
                         {!analysis && (
                             <div className="w-full max-w-sm mb-6 space-y-1.5">
                                 <Label className="text-sm font-medium">Detection Sensitivity</Label>
@@ -291,6 +339,8 @@ export default function Upload() {
                                         onClick={() => {
                                             setFile(null);
                                             setAnalysis(null);
+                                            setValidationStatus("idle");
+                                            setValidationResult(null);
                                         }}
                                     >
                                         Upload Another
@@ -305,7 +355,7 @@ export default function Upload() {
                             </div>
                         )}
 
-                        {/* ── file selected, not yet done ── */}
+                        {/* ── file selected, not yet analyzed ── */}
                         {file && !analysis && (
                             <div className="flex flex-col items-center gap-4 w-full max-w-sm">
                                 <div className="bg-primary/10 p-4 rounded-full">
@@ -317,6 +367,89 @@ export default function Upload() {
                                         {(file.size / 1024 / 1024).toFixed(2)} MB
                                     </p>
                                 </div>
+
+                                {/* ── validation panel ── */}
+                                {validationStatus === "validating" && (
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground w-full justify-center py-2">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span>Checking dataset features…</span>
+                                    </div>
+                                )}
+
+                                {(validationStatus === "valid" || validationStatus === "invalid") && validationResult && (
+                                    <div className={`w-full rounded-lg border p-3 text-sm ${
+                                        validationResult.is_valid
+                                            ? "border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20"
+                                            : "border-destructive/40 bg-destructive/5"
+                                    }`}>
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            {validationResult.is_valid
+                                                ? <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                                                : <ShieldAlert className="h-4 w-4 text-destructive shrink-0" />
+                                            }
+                                            <span className={`font-medium ${validationResult.is_valid ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
+                                                {validationResult.is_valid
+                                                    ? `Features validated — ${validationResult.match_score}% match`
+                                                    : `Incompatible dataset — ${validationResult.match_score}% match`
+                                                }
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mb-2">
+                                            {validationResult.matched}/{validationResult.total} required IoT traffic features detected
+                                        </p>
+
+                                        {validationResult.matched_features.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mb-1.5">
+                                                {validationResult.matched_features.map((f) => (
+                                                    <span
+                                                        key={f.required}
+                                                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 rounded text-xs"
+                                                        title={f.match_type === "fuzzy" ? `Matched as "${f.found}"` : undefined}
+                                                    >
+                                                        <CheckCircle className="h-3 w-3 shrink-0" />
+                                                        {f.required}
+                                                        {f.match_type === "fuzzy" && (
+                                                            <span className="opacity-50">*</span>
+                                                        )}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {validationResult.missing_features.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mb-1.5">
+                                                {validationResult.missing_features.map((f) => (
+                                                    <span
+                                                        key={f}
+                                                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-destructive/10 text-destructive rounded text-xs"
+                                                    >
+                                                        <XCircle className="h-3 w-3 shrink-0" />
+                                                        {f}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {validationResult.matched_features.some(f => f.match_type === "fuzzy") && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                * Matched by approximate column name
+                                            </p>
+                                        )}
+
+                                        {!validationResult.is_valid && (
+                                            <p className="text-xs text-muted-foreground mt-1.5 border-t border-destructive/20 pt-1.5">
+                                                This file does not appear to contain IoT network traffic data. Please upload a compatible dataset.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {validationStatus === "error" && (
+                                    <div className="flex items-start gap-2 p-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-700 dark:text-amber-400 w-full">
+                                        <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                        <span>Feature validation unavailable (backend offline). You may still attempt analysis.</span>
+                                    </div>
+                                )}
 
                                 {/* status message while analyzing */}
                                 {isAnalyzing && statusMsg && (
@@ -338,7 +471,11 @@ export default function Upload() {
                                     <Button
                                         variant="ghost"
                                         className="flex-1 text-destructive hover:text-destructive/90"
-                                        onClick={() => setFile(null)}
+                                        onClick={() => {
+                                            setFile(null);
+                                            setValidationStatus("idle");
+                                            setValidationResult(null);
+                                        }}
                                         disabled={isAnalyzing}
                                     >
                                         <X className="mr-2 h-4 w-4" /> Remove
@@ -346,12 +483,24 @@ export default function Upload() {
                                     <Button
                                         className="flex-1"
                                         onClick={handleAnalyze}
-                                        disabled={isAnalyzing}
+                                        disabled={isAnalyzing || !canAnalyze}
+                                        title={
+                                            validationStatus === "invalid"
+                                                ? "Dataset features do not match required IoT traffic format"
+                                                : validationStatus === "validating"
+                                                ? "Validating dataset features…"
+                                                : undefined
+                                        }
                                     >
                                         {isAnalyzing ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                                 Analyzing…
+                                            </>
+                                        ) : validationStatus === "validating" ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Validating…
                                             </>
                                         ) : (
                                             "Start Analysis"
