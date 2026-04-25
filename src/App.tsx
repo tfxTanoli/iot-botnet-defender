@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 // Auth Pages
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
+import AuthCallback from "@/pages/auth/Callback";
 
 // Dashboard Pages
 import DashboardHome from "@/pages/dashboard/Home";
@@ -24,6 +25,9 @@ function App() {
         <Routes>
           {/* Root Redirect */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+          {/* OAuth Callback - must be outside AuthLayout and ProtectedRoute */}
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Auth Routes */}
           <Route element={<AuthLayout />}>

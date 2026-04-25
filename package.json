@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "chrome:debug": "start \"\" \"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --remote-debugging-port=9222 --user-data-dir=%TEMP%\\chrome-cdp-debug http://localhost:5173"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

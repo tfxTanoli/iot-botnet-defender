@@ -81,6 +81,10 @@ export default function Upload() {
     };
 
     const selectFile = (f: File) => {
+        if (!f.name.toLowerCase().endsWith(".csv")) {
+            setError(`"${f.name}" is not a CSV file. Only .csv files are supported.`);
+            return;
+        }
         setFile(f);
         setAnalysis(null);
         setError(null);
@@ -226,6 +230,12 @@ export default function Upload() {
                                 <p className="text-sm text-muted-foreground mb-6">
                                     CSV files (max 50 MB)
                                 </p>
+                                {error && (
+                                    <div className="flex items-start gap-2 p-3 mb-4 bg-destructive/10 rounded-md text-destructive text-sm w-full max-w-sm">
+                                        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                                        <span>{error}</span>
+                                    </div>
+                                )}
                                 <div className="relative">
                                     <Button>Select File</Button>
                                     <Input
