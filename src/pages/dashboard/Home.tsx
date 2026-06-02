@@ -245,7 +245,7 @@ export default function DashboardHome() {
                                 <PolarAngleAxis dataKey="axis" tick={{ fill: 'hsl(220 20% 55%)', fontSize: 11 }} />
                                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'hsl(220 20% 40%)', fontSize: 9 }} tickCount={4} />
                                 <Radar name="Score" dataKey="score" stroke="#00d4ff" fill="#00d4ff" fillOpacity={0.12} strokeWidth={2} />
-                                <Tooltip contentStyle={ttStyle} itemStyle={{ color: '#00d4ff' }} formatter={(val: number) => [`${val.toFixed(0)}`, 'Score']} />
+                                <Tooltip contentStyle={ttStyle} itemStyle={{ color: '#00d4ff' }} formatter={(val: number | undefined) => [val != null ? val.toFixed(0) : '—', 'Score']} />
                             </RadarChart>
                         </ResponsiveContainer>
                     </CardContent>
@@ -314,7 +314,7 @@ export default function DashboardHome() {
                                         <Tooltip
                                             contentStyle={ttStyle}
                                             itemStyle={ttItem}
-                                            formatter={(v: number) => [v.toLocaleString(), '']}
+                                            formatter={(v: number | undefined) => [v != null ? v.toLocaleString() : '—', '']}
                                         />
                                     </PieChart>
                                 </ResponsiveContainer>
@@ -378,8 +378,8 @@ export default function DashboardHome() {
                                     contentStyle={ttStyle}
                                     itemStyle={ttItem}
                                     labelStyle={ttLabel}
-                                    formatter={(val: number, name: string) =>
-                                        name === 'Threat Rate %' ? [`${val}%`, name] : [val.toLocaleString(), name]
+                                    formatter={(val: number | undefined, name: string) =>
+                                        name === 'Threat Rate %' ? [`${val ?? 0}%`, name] : [(val ?? 0).toLocaleString(), name]
                                     }
                                 />
                                 <Legend wrapperStyle={legendStyle} />
