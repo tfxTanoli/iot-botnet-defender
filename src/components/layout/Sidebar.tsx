@@ -34,7 +34,7 @@ export function Sidebar({ className }: SidebarProps) {
                     </div>
                     <div>
                         <h2 className="text-sm font-bold tracking-wide text-cyan-300">
-                            Botnet Defender
+                            Botnet Detector
                         </h2>
                         <p className="text-[10px] text-muted-foreground tracking-widest uppercase">
                             IoT Security
