@@ -74,7 +74,7 @@ export default function Upload() {
 
     const [dragActive, setDragActive]           = useState(false);
     const [file, setFile]                       = useState<File | null>(null);
-    const [sensitivity, setSensitivity]         = useState<Sensitivity>("medium");
+    const [sensitivity, setSensitivity]         = useState<Sensitivity>("low");
     const [isAnalyzing, setIsAnalyzing]         = useState(false);
     const [statusMsg, setStatusMsg]             = useState("");
     const [analysis, setAnalysis]               = useState<AnalysisResponse | null>(null);
@@ -251,16 +251,14 @@ export default function Upload() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {(Object.keys(SENSITIVITY_LABELS) as Sensitivity[]).map((key) => (
-                                            <SelectItem key={key} value={key}>
-                                                <span className="font-medium">
-                                                    {SENSITIVITY_LABELS[key].label}
-                                                </span>
-                                                <span className="text-muted-foreground ml-2 text-xs">
-                                                    — {SENSITIVITY_LABELS[key].description}
-                                                </span>
-                                            </SelectItem>
-                                        ))}
+                                        <SelectItem value="low">
+                                            <span className="font-medium">
+                                                {SENSITIVITY_LABELS.low.label}
+                                            </span>
+                                            <span className="text-muted-foreground ml-2 text-xs">
+                                                — {SENSITIVITY_LABELS.low.description}
+                                            </span>
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

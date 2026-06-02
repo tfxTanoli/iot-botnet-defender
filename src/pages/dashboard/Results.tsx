@@ -32,46 +32,53 @@ type ResultRow = {
 
 export default function Results() {
     const { user } = useAuth();
-    const [resultsData, setResultsData] = useState<ResultRow[]>([]);
-    const [isLoading, setIsLoading]     = useState(true);
+    const [tableRows, setTableRows]         = useState<ResultRow[]>([]);
+    const [totalCount, setTotalCount]       = useState(0);
+    const [maliciousCount, setMaliciousCount] = useState(0);
+    const [isLoading, setIsLoading]         = useState(true);
 
     useEffect(() => {
         if (!user) return;
-        const fetch = async () => {
+        const load = async () => {
             setIsLoading(true);
-            const { data } = await supabase
-                .from("botnet_results")
-                .select("*")
-                .eq("user_id", user.id)
-                .order("created_at", { ascending: false });
-            if (data) setResultsData(data as ResultRow[]);
+            const [totalRes, maliciousRes, rowsRes] = await Promise.all([
+                supabase
+                    .from("botnet_results")
+                    .select("*", { count: "exact", head: true })
+                    .eq("user_id", user.id),
+                supabase
+                    .from("botnet_results")
+                    .select("*", { count: "exact", head: true })
+                    .eq("user_id", user.id)
+                    .eq("prediction", "MALICIOUS"),
+                supabase
+                    .from("botnet_results")
+                    .select("*")
+                    .eq("user_id", user.id)
+                    .order("created_at", { ascending: false })
+                    .limit(1000),
+            ]);
+            setTotalCount(totalRes.count ?? 0);
+            setMaliciousCount(maliciousRes.count ?? 0);
+            if (rowsRes.data) setTableRows(rowsRes.data as ResultRow[]);
             setIsLoading(false);
         };
-        fetch();
+        load();
     }, [user]);
 
-    const total     = resultsData.length;
-    const malicious = resultsData.filter((r) => r.prediction === "MALICIOUS").length;
+    const total     = totalCount;
+    const malicious = maliciousCount;
     const normal    = total - malicious;
-
-    // pie chart — count by prediction label
-    const pieDataMap = resultsData.reduce<Record<string, number>>((acc, r) => {
-        const label = r.prediction || "Unknown";
-        acc[label]  = (acc[label] || 0) + 1;
-        return acc;
-    }, {});
 
     const colorMap: Record<string, string> = {
         NORMAL:    "hsl(var(--primary))",
         MALICIOUS: "hsl(var(--destructive))",
-        Unknown:   "hsl(var(--muted-foreground))",
     };
 
-    const pieData = Object.entries(pieDataMap).map(([name, value]) => ({
-        name,
-        value,
-        color: colorMap[name] ?? "hsl(var(--chart-2))",
-    }));
+    const pieData = [
+        { name: "NORMAL",    value: normal,    color: colorMap.NORMAL },
+        { name: "MALICIOUS", value: malicious, color: colorMap.MALICIOUS },
+    ].filter((d) => d.value > 0);
 
     if (isLoading) {
         return (
@@ -171,7 +178,9 @@ export default function Results() {
                     <CardHeader>
                         <CardTitle className="font-medium tracking-wide">Detection Logs</CardTitle>
                         <CardDescription>
-                            Per-record predictions with confidence scores.
+                            {total > 1000
+                                ? `Showing latest 1,000 of ${total.toLocaleString()} records.`
+                                : "Per-record predictions with confidence scores."}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -185,7 +194,7 @@ export default function Results() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {resultsData.length === 0 ? (
+                                {tableRows.length === 0 ? (
                                     <TableRow>
                                         <TableCell
                                             colSpan={4}
@@ -195,7 +204,7 @@ export default function Results() {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    resultsData.map((row) => (
+                                    tableRows.map((row) => (
                                         <TableRow
                                             key={row.id}
                                             className="hover:bg-muted/30 transition-colors"
