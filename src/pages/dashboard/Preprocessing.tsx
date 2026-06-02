@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { CheckCircle, Download, Loader2, RotateCcw, Upload, X } from "lucide-react";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 type ColStat = {
     name:    string;
