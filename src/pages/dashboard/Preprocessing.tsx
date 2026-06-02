@@ -433,8 +433,8 @@ export default function Preprocessing() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="minmax">MinMax Scaling - [0, 1]</SelectItem>
-                                        <SelectItem value="standard">Standard Scaling - Z-score</SelectItem>
+                                        <SelectItem value="minmax">MinMax Scaling [0, 1]</SelectItem>
+                                        <SelectItem value="standard">Standard Scaling (Z-score)</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <Button

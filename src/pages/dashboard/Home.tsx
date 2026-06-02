@@ -350,7 +350,7 @@ export default function DashboardHome() {
                                 Threat Rate vs. Traffic Volume
                             </CardTitle>
                             <CardDescription className="text-xs mt-0.5">
-                                Combined view - bar columns show traffic volume; amber line tracks attack rate (%)
+                                Combined view: bar columns show traffic volume, amber line tracks attack rate (%)
                             </CardDescription>
                         </div>
                         <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-400">Trend</Badge>
