@@ -74,9 +74,9 @@ type ValidationResult = {
 type ValidationStatus = "idle" | "validating" | "valid" | "invalid" | "error";
 
 const SENSITIVITY_LABELS: Record<Sensitivity, { label: string; description: string }> = {
-    high:   { label: "High",   description: "Flags more traffic — stricter detection" },
+    high:   { label: "High",   description: "Flags more traffic - stricter detection" },
     medium: { label: "Medium", description: "Balanced (default)" },
-    low:    { label: "Low",    description: "Fewer alerts — conservative detection" },
+    low:    { label: "Low",    description: "Fewer alerts - conservative detection" },
 };
 
 const CHUNK = 500;
@@ -250,7 +250,7 @@ export default function Upload() {
         await supabase.from("activity_history").insert({
             user_id: user.id,
             action:  "Dataset Analyzed",
-            details: `${data.filename} — ${data.total} records, ${data.malicious} malicious detected`,
+            details: `${data.filename} - ${data.total} records, ${data.malicious} malicious detected`,
         });
     };
 
@@ -335,7 +335,7 @@ export default function Upload() {
                                                 {SENSITIVITY_LABELS.low.label}
                                             </span>
                                             <span className="text-muted-foreground ml-2 text-xs">
-                                                — {SENSITIVITY_LABELS.low.description}
+                                                - {SENSITIVITY_LABELS.low.description}
                                             </span>
                                         </SelectItem>
                                     </SelectContent>
@@ -487,8 +487,8 @@ export default function Upload() {
                                             }
                                             <span className={`font-medium ${validationResult.is_valid ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
                                                 {validationResult.is_valid
-                                                    ? `Features validated — ${validationResult.match_score}% match`
-                                                    : `Incompatible dataset — ${validationResult.match_score}% match`
+                                                    ? `Features validated - ${validationResult.match_score}% match`
+                                                    : `Incompatible dataset - ${validationResult.match_score}% match`
                                                 }
                                             </span>
                                         </div>

@@ -46,7 +46,7 @@ export function Header() {
                 </SheetContent>
             </Sheet>
 
-            {/* Left — title */}
+            {/* Left - title */}
             <div className="flex items-center gap-2.5 flex-1">
                 <Shield className="h-4 w-4 text-cyan-400 hidden sm:block" />
                 <span className="text-sm font-semibold text-foreground hidden sm:block">
@@ -58,7 +58,7 @@ export function Header() {
                 </Badge>
             </div>
 
-            {/* Right — user menu */}
+            {/* Right - user menu */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full ring-1 ring-border/50 hover:ring-cyan-500/40 transition-all">

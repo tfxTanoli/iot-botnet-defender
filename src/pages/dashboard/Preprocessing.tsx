@@ -282,9 +282,9 @@ export default function Preprocessing() {
                                                             {s.missing}
                                                         </TableCell>
                                                         <TableCell className="text-muted-foreground">{s.unique}</TableCell>
-                                                        <TableCell className="font-mono text-xs">{s.min ?? "—"}</TableCell>
-                                                        <TableCell className="font-mono text-xs">{s.max ?? "—"}</TableCell>
-                                                        <TableCell className="font-mono text-xs">{s.mean ?? "—"}</TableCell>
+                                                        <TableCell className="font-mono text-xs">{s.min ?? "-"}</TableCell>
+                                                        <TableCell className="font-mono text-xs">{s.max ?? "-"}</TableCell>
+                                                        <TableCell className="font-mono text-xs">{s.mean ?? "-"}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -433,8 +433,8 @@ export default function Preprocessing() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="minmax">MinMax Scaling — [0, 1]</SelectItem>
-                                        <SelectItem value="standard">Standard Scaling — Z-score</SelectItem>
+                                        <SelectItem value="minmax">MinMax Scaling - [0, 1]</SelectItem>
+                                        <SelectItem value="standard">Standard Scaling - Z-score</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <Button

@@ -254,7 +254,7 @@ export default function Recommendations() {
             <div className="flex items-center justify-between">
                 <PageHeader
                     heading="Security Recommendations"
-                    description={`Analysis of ${filename} — ${total.toLocaleString()} records`}
+                    description={`Analysis of ${filename} - ${total.toLocaleString()} records`}
                 />
                 <div className="flex gap-2 shrink-0">
                     <Button variant="outline" size="sm" onClick={() => navigate(-1)}>

@@ -191,7 +191,7 @@ export default function DashboardHome() {
 
             {/* ── Row 2: Area Chart + Radar Chart ── */}
             <div className="grid gap-4 md:grid-cols-7">
-                {/* 1. Traffic Flow — Area Chart */}
+                {/* 1. Traffic Flow - Area Chart */}
                 <Card className="col-span-4 glass-card">
                     <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
@@ -232,7 +232,7 @@ export default function DashboardHome() {
                     </CardContent>
                 </Card>
 
-                {/* 2. Security Posture — Radar Chart */}
+                {/* 2. Security Posture - Radar Chart */}
                 <Card className="col-span-3 glass-card">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium tracking-wide">Security Posture</CardTitle>
@@ -245,7 +245,7 @@ export default function DashboardHome() {
                                 <PolarAngleAxis dataKey="axis" tick={{ fill: 'hsl(220 20% 55%)', fontSize: 11 }} />
                                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'hsl(220 20% 40%)', fontSize: 9 }} tickCount={4} />
                                 <Radar name="Score" dataKey="score" stroke="#00d4ff" fill="#00d4ff" fillOpacity={0.12} strokeWidth={2} />
-                                <Tooltip contentStyle={ttStyle} itemStyle={{ color: '#00d4ff' }} formatter={(val: number | undefined) => [val != null ? val.toFixed(0) : '—', 'Score']} />
+                                <Tooltip contentStyle={ttStyle} itemStyle={{ color: '#00d4ff' }} formatter={(val: number | undefined) => [val != null ? val.toFixed(0) : '-', 'Score']} />
                             </RadarChart>
                         </ResponsiveContainer>
                     </CardContent>
@@ -254,7 +254,7 @@ export default function DashboardHome() {
 
             {/* ── Row 3: Stacked Bar Chart + Donut Chart ── */}
             <div className="grid gap-4 md:grid-cols-7">
-                {/* 3. Daily Traffic Breakdown — Stacked Bar Chart */}
+                {/* 3. Daily Traffic Breakdown - Stacked Bar Chart */}
                 <Card className="col-span-4 glass-card">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium tracking-wide flex items-center gap-2">
@@ -280,7 +280,7 @@ export default function DashboardHome() {
                     </CardContent>
                 </Card>
 
-                {/* 4. Traffic Distribution — Donut Chart */}
+                {/* 4. Traffic Distribution - Donut Chart */}
                 <Card className="col-span-3 glass-card">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium tracking-wide">Traffic Distribution</CardTitle>
@@ -314,7 +314,7 @@ export default function DashboardHome() {
                                         <Tooltip
                                             contentStyle={ttStyle}
                                             itemStyle={ttItem}
-                                            formatter={(v: number | undefined) => [v != null ? v.toLocaleString() : '—', '']}
+                                            formatter={(v: number | undefined) => [v != null ? v.toLocaleString() : '-', '']}
                                         />
                                     </PieChart>
                                 </ResponsiveContainer>
@@ -328,7 +328,7 @@ export default function DashboardHome() {
                                             <div className="flex items-center gap-2">
                                                 <span className="font-semibold text-foreground tabular-nums">{item.value.toLocaleString()}</span>
                                                 <span className="text-muted-foreground/60 tabular-nums">
-                                                    {stats.totalRecords > 0 ? `${((item.value / stats.totalRecords) * 100).toFixed(1)}%` : '—'}
+                                                    {stats.totalRecords > 0 ? `${((item.value / stats.totalRecords) * 100).toFixed(1)}%` : '-'}
                                                 </span>
                                             </div>
                                         </div>
@@ -340,7 +340,7 @@ export default function DashboardHome() {
                 </Card>
             </div>
 
-            {/* ── Row 4: Composed Chart (full width) — Threat Rate vs Volume ── */}
+            {/* ── Row 4: Composed Chart (full width) - Threat Rate vs Volume ── */}
             <Card className="glass-card">
                 <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
@@ -350,7 +350,7 @@ export default function DashboardHome() {
                                 Threat Rate vs. Traffic Volume
                             </CardTitle>
                             <CardDescription className="text-xs mt-0.5">
-                                Combined view — bar columns show traffic volume; amber line tracks attack rate (%)
+                                Combined view - bar columns show traffic volume; amber line tracks attack rate (%)
                             </CardDescription>
                         </div>
                         <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-400">Trend</Badge>
