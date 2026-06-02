@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import {
     UploadCloud, FileText, X, CheckCircle, AlertTriangle, Loader2,
-    ShieldCheck, ShieldAlert, XCircle,
+    ShieldCheck, ShieldAlert, XCircle, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -22,23 +22,36 @@ import { supabase } from "@/lib/supabase";
 const API_BASE = "http://localhost:8000";
 
 type RowResult = {
-    row: number;
-    ip: string;
-    mse: number;
+    row:        number;
+    ip:         string;
+    mse:        number;
     prediction: "MALICIOUS" | "NORMAL";
     confidence: number;
 };
 
 type Sensitivity = "high" | "medium" | "low";
 
+type RecommendationData = {
+    severity:             "CLEAN" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+    severity_description: string;
+    malicious_pct:        number;
+    affected_ips:         string[];
+    avg_mse_ratio:        number;
+    avg_confidence:       number;
+    botnet_profile:       { profile: string; detail: string } | null;
+    threat_indicators:    { label: string; value: string; level: string }[];
+    recommendations:      { urgency: string }[];
+};
+
 type AnalysisResponse = {
-    filename:    string;
-    total:       number;
-    malicious:   number;
-    normal:      number;
-    threshold:   number;
-    sensitivity: Sensitivity;
-    results:     RowResult[];
+    filename:            string;
+    total:               number;
+    malicious:           number;
+    normal:              number;
+    threshold:           number;
+    sensitivity:         Sensitivity;
+    results:             RowResult[];
+    recommendation_data: RecommendationData;
 };
 
 type FeatureMatch = {
@@ -67,6 +80,72 @@ const SENSITIVITY_LABELS: Record<Sensitivity, { label: string; description: stri
 };
 
 const CHUNK = 500;
+
+// ── Severity summary shown after analysis ────────────────────────────────────
+
+const SEVERITY_STYLES = {
+    CLEAN:    { bg: "bg-emerald-500/10",  border: "border-emerald-500/30",  text: "text-emerald-600 dark:text-emerald-400"  },
+    LOW:      { bg: "bg-blue-500/10",     border: "border-blue-500/30",     text: "text-blue-600 dark:text-blue-400"        },
+    MEDIUM:   { bg: "bg-amber-500/10",    border: "border-amber-500/30",    text: "text-amber-600 dark:text-amber-400"      },
+    HIGH:     { bg: "bg-orange-500/10",   border: "border-orange-500/30",   text: "text-orange-600 dark:text-orange-400"   },
+    CRITICAL: { bg: "bg-destructive/10",  border: "border-destructive/30",  text: "text-destructive"                        },
+} as const;
+
+function SeveritySummaryCard({
+    rd,
+    onViewRecommendations,
+}: {
+    rd: RecommendationData;
+    onViewRecommendations: () => void;
+}) {
+    const style = SEVERITY_STYLES[rd.severity];
+    const Icon  = rd.severity === "CLEAN" || rd.severity === "LOW"
+        ? ShieldCheck
+        : rd.severity === "MEDIUM"
+        ? AlertTriangle
+        : ShieldAlert;
+
+    return (
+        <div className={`w-full rounded-lg border p-4 ${style.bg} ${style.border}`}>
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <Icon className={`h-5 w-5 shrink-0 ${style.text}`} />
+                    <div>
+                        <span className={`font-bold text-sm ${style.text}`}>
+                            {rd.severity}
+                        </span>
+                        {rd.botnet_profile && rd.botnet_profile.profile !== "Unknown" && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                                · {rd.botnet_profile.profile}
+                            </span>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
+                            {rd.severity_description}
+                        </p>
+                    </div>
+                </div>
+                <Button
+                    size="sm"
+                    className="shrink-0"
+                    onClick={onViewRecommendations}
+                >
+                    View Recommendations
+                    <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
+            </div>
+            {rd.recommendations.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-2 border-t border-current/10 pt-2">
+                    {rd.recommendations.length} action{rd.recommendations.length !== 1 ? "s" : ""} recommended
+                    {rd.recommendations.filter((r) => r.urgency === "immediate").length > 0 && (
+                        <span className="text-destructive font-medium ml-1">
+                            · {rd.recommendations.filter((r) => r.urgency === "immediate").length} immediate
+                        </span>
+                    )}
+                </p>
+            )}
+        </div>
+    );
+}
 
 export default function Upload() {
     const { user } = useAuth();
@@ -296,7 +375,7 @@ export default function Upload() {
 
                         {/* ── analysis complete ── */}
                         {file && analysis && (
-                            <div className="flex flex-col items-center gap-4 w-full max-w-sm">
+                            <div className="flex flex-col items-center gap-4 w-full max-w-md">
                                 <div className="bg-emerald-500/10 p-4 rounded-full">
                                     <CheckCircle className="h-8 w-8 text-emerald-500" />
                                 </div>
@@ -330,6 +409,26 @@ export default function Upload() {
                                     </div>
                                 </div>
 
+                                {/* ── Severity summary card ── */}
+                                {analysis.recommendation_data && (
+                                    <SeveritySummaryCard
+                                        rd={analysis.recommendation_data}
+                                        onViewRecommendations={() =>
+                                            navigate("/dashboard/recommendations", {
+                                                state: {
+                                                    filename:            analysis.filename,
+                                                    total:               analysis.total,
+                                                    malicious:           analysis.malicious,
+                                                    normal:              analysis.normal,
+                                                    threshold:           analysis.threshold,
+                                                    sensitivity:         analysis.sensitivity,
+                                                    recommendation_data: analysis.recommendation_data,
+                                                },
+                                            })
+                                        }
+                                    />
+                                )}
+
                                 <div className="flex gap-3 mt-2 w-full">
                                     <Button
                                         variant="outline"
@@ -344,6 +443,7 @@ export default function Upload() {
                                         Upload Another
                                     </Button>
                                     <Button
+                                        variant="outline"
                                         className="flex-1"
                                         onClick={() => navigate("/dashboard/results")}
                                     >

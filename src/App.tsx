@@ -16,6 +16,7 @@ import Preprocessing from "@/pages/dashboard/Preprocessing";
 import Results from "@/pages/dashboard/Results";
 import Export from "@/pages/dashboard/Export";
 import History from "@/pages/dashboard/History";
+import Recommendations from "@/pages/dashboard/Recommendations";
 import NotFound from "@/pages/NotFound";
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
               <Route path="results" element={<Results />} />
               <Route path="export" element={<Export />} />
               <Route path="history" element={<History />} />
+              <Route path="recommendations" element={<Recommendations />} />
             </Route>
           </Route>
 

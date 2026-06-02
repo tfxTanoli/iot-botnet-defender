@@ -6,7 +6,8 @@ import {
     Settings2,
     ShieldAlert,
     History,
-    Activity
+    Activity,
+    Lightbulb,
 } from "lucide-react";
 
 export const sidebarItems = [
@@ -35,6 +36,11 @@ export const sidebarItems = [
         title: "Activity History",
         href: "/dashboard/history",
         icon: History,
+    },
+    {
+        title: "Recommendations",
+        href: "/dashboard/recommendations",
+        icon: Lightbulb,
     },
 ];
 
