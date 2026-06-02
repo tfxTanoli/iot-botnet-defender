@@ -4,13 +4,14 @@ import { Header } from "@/components/layout/Header";
 
 export default function DashboardLayout() {
     return (
-        <div className="flex h-screen overflow-hidden bg-background relative isolate">
-            {/* Ambient Background Effects */}
-            <div className="absolute top-0 -left-40 w-96 h-96 bg-primary/10 rounded-full mix-blend-screen filter blur-[100px] opacity-70 animate-pulse pointer-events-none" />
-            <div className="absolute top-0 -right-40 w-96 h-96 bg-primary/5 rounded-full mix-blend-screen filter blur-[100px] opacity-70 pointer-events-none" />
-            
-            {/* Sidebar for Desktop */}
-            <aside className="hidden w-64 border-r border-border/50 bg-card/50 backdrop-blur-xl md:block z-10">
+        <div className="flex h-screen overflow-hidden bg-background relative isolate grid-bg">
+            {/* Ambient glow orbs */}
+            <div className="pointer-events-none absolute -top-32 -left-32 h-[600px] w-[600px] rounded-full bg-cyan-500/5 blur-[120px]" />
+            <div className="pointer-events-none absolute top-1/2 -right-40 h-[500px] w-[500px] rounded-full bg-violet-500/5 blur-[120px]" />
+            <div className="pointer-events-none absolute bottom-0 left-1/3 h-[400px] w-[400px] rounded-full bg-cyan-500/3 blur-[100px]" />
+
+            {/* Sidebar */}
+            <aside className="hidden w-64 border-r border-border/50 bg-card/60 backdrop-blur-xl md:block z-10 flex-shrink-0">
                 <Sidebar className="h-full" />
             </aside>
 

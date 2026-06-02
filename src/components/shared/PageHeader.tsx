@@ -6,14 +6,16 @@ interface PageHeaderProps {
 
 export function PageHeader({ heading, description, children }: PageHeaderProps) {
     return (
-        <div className="flex items-center justify-between space-y-2 pb-6">
-            <div className="space-y-1">
-                <h2 className="text-2xl font-bold tracking-tight">{heading}</h2>
+        <div className="flex items-center justify-between pb-4 border-b border-border/40">
+            <div className="space-y-0.5">
+                <h2 className="text-xl font-bold tracking-tight text-foreground">{heading}</h2>
                 {description && (
-                    <p className="text-muted-foreground">{description}</p>
+                    <p className="text-sm text-muted-foreground">{description}</p>
                 )}
             </div>
-            <div className="flex items-center space-x-2">{children}</div>
+            {children && (
+                <div className="flex items-center space-x-2">{children}</div>
+            )}
         </div>
     );
 }
