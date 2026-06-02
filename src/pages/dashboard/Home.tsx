@@ -378,8 +378,8 @@ export default function DashboardHome() {
                                     contentStyle={ttStyle}
                                     itemStyle={ttItem}
                                     labelStyle={ttLabel}
-                                    formatter={(val: number | undefined, name: string) =>
-                                        name === 'Threat Rate %' ? [`${val ?? 0}%`, name] : [(val ?? 0).toLocaleString(), name]
+                                    formatter={(val: number | undefined, name: string | undefined) =>
+                                        name === 'Threat Rate %' ? [`${val ?? 0}%`, name ?? ''] : [(val ?? 0).toLocaleString(), name ?? '']
                                     }
                                 />
                                 <Legend wrapperStyle={legendStyle} />
