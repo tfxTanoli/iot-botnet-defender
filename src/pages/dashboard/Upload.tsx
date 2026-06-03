@@ -52,6 +52,8 @@ type AnalysisResponse = {
     sensitivity:         Sensitivity;
     results:             RowResult[];
     recommendation_data: RecommendationData;
+    device_type:         string;
+    ip_address:          string;
 };
 
 type FeatureMatch = {
@@ -248,9 +250,11 @@ export default function Upload() {
 
         setStatusMsg("Logging activity…");
         await supabase.from("activity_history").insert({
-            user_id: user.id,
-            action:  "Dataset Analyzed",
-            details: `${data.filename}: ${data.total} records, ${data.malicious} malicious detected`,
+            user_id:     user.id,
+            action:      "Dataset Analyzed",
+            details:     `${data.filename}: ${data.total} records, ${data.malicious} malicious detected`,
+            device_type: data.device_type,
+            ip_address:  data.ip_address,
         });
     };
 

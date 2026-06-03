@@ -31,6 +31,8 @@ CREATE TABLE public.activity_history (
     user_id uuid REFERENCES auth.users(id) NOT NULL,
     action text NOT NULL,
     details text NOT NULL,
+    device_type text,
+    ip_address text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
