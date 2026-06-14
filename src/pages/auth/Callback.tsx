@@ -5,24 +5,24 @@ import { Loader2 } from "lucide-react"
 
 export default function AuthCallback() {
     const navigate = useNavigate()
-    const { session, loading } = useAuth()
+    const { user, loading } = useAuth()
     const redirected = useRef(false)
 
-    // Check for error params returned by Supabase (e.g. wrong client secret)
+    // Check for error params returned by the auth provider
     const params = new URLSearchParams(window.location.search)
     const authError = params.get("error_description") || params.get("error")
 
-    // Navigate to dashboard as soon as session is available
+    // Navigate to dashboard as soon as the user is available
     useEffect(() => {
-        if (session && !redirected.current) {
+        if (user && !redirected.current) {
             redirected.current = true
             navigate("/dashboard", { replace: true })
         }
-    }, [session, navigate])
+    }, [user, navigate])
 
-    // After auth state settles with no session, redirect to login
+    // After auth state settles with no user, redirect to login
     useEffect(() => {
-        if (!loading && !session && !authError) {
+        if (!loading && !user && !authError) {
             const timer = setTimeout(() => {
                 if (!redirected.current) {
                     redirected.current = true
@@ -31,7 +31,7 @@ export default function AuthCallback() {
             }, 2000)
             return () => clearTimeout(timer)
         }
-    }, [loading, session, authError, navigate])
+    }, [loading, user, authError, navigate])
 
     if (authError) {
         return (

@@ -1,0 +1,67 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "botnet_results": {
+          ".indexOn": ["created_at"],
+          "$recordId": {
+            ".validate": "newData.hasChildren(['ip', 'prediction', 'confidence', 'created_at'])",
+            "ip": { ".validate": "newData.isString()" },
+            "prediction": { ".validate": "newData.isString()" },
+            "confidence": { ".validate": "newData.isNumber()" },
+            "created_at": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "traffic_overview": {
+          ".indexOn": ["created_at"],
+          "$recordId": {
+            ".validate": "newData.hasChildren(['name', 'normal', 'attacks', 'created_at'])",
+            "name": { ".validate": "newData.isString()" },
+            "normal": { ".validate": "newData.isNumber()" },
+            "attacks": { ".validate": "newData.isNumber()" },
+            "created_at": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "activity_history": {
+          ".indexOn": ["created_at"],
+          "$recordId": {
+            ".validate": "newData.hasChildren(['action', 'details', 'created_at'])",
+            "action": { ".validate": "newData.isString()" },
+            "details": { ".validate": "newData.isString()" },
+            "device_type": { ".validate": "newData.isString()" },
+            "ip_address": { ".validate": "newData.isString()" },
+            "created_at": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "datasets": {
+          ".indexOn": ["created_at"],
+          "$recordId": {
+            ".validate": "newData.hasChildren(['filename', 'size_bytes', 'created_at'])",
+            "filename": { ".validate": "newData.isString()" },
+            "size_bytes": { ".validate": "newData.isNumber()" },
+            "created_at": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "active_threats": {
+          ".indexOn": ["created_at"],
+          "$recordId": {
+            ".validate": "newData.hasChildren(['status', 'description', 'created_at'])",
+            "status": { ".validate": "newData.isString()" },
+            "description": { ".validate": "newData.isString()" },
+            "created_at": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

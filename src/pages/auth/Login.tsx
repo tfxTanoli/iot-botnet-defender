@@ -14,8 +14,28 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Link, useNavigate } from "react-router-dom"
-import { supabase } from "@/lib/supabase"
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth"
+import { FirebaseError } from "firebase/app"
+import { auth, googleProvider } from "@/lib/firebase"
 import { Loader2 } from "lucide-react"
+
+function authErrorMessage(error: unknown): string {
+    if (error instanceof FirebaseError) {
+        switch (error.code) {
+            case "auth/invalid-credential":
+            case "auth/wrong-password":
+            case "auth/user-not-found":
+                return "Invalid email or password."
+            case "auth/too-many-requests":
+                return "Too many attempts. Please try again later."
+            case "auth/popup-closed-by-user":
+                return "Sign-in popup was closed before completing."
+            default:
+                return error.message
+        }
+    }
+    return "Unexpected error. Please try again."
+}
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -52,33 +72,26 @@ export default function Login() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setLoading(true)
         setError(null)
-        
-        const { error } = await supabase.auth.signInWithPassword({
-            email: values.email,
-            password: values.password,
-        })
 
-        setLoading(false)
-
-        if (error) {
-            setError(error.message)
-            return
+        try {
+            await signInWithEmailAndPassword(auth, values.email, values.password)
+            navigate("/dashboard")
+        } catch (err) {
+            setError(authErrorMessage(err))
+        } finally {
+            setLoading(false)
         }
-
-        navigate("/dashboard")
     }
 
     async function signInWithGoogle() {
         setGoogleLoading(true)
         setError(null)
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            },
-        })
-        if (error) {
-            setError(error.message)
+        try {
+            await signInWithPopup(auth, googleProvider)
+            navigate("/dashboard")
+        } catch (err) {
+            setError(authErrorMessage(err))
+        } finally {
             setGoogleLoading(false)
         }
     }

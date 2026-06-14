@@ -16,7 +16,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+import { getAll, getLatest } from "@/lib/db";
+import type { TrafficOverview, ActivityHistory, Dataset } from "@/lib/db";
 
 /* ── Custom donut centre label ── */
 const DonutCenterLabel = ({ viewBox, score }: { viewBox?: { cx: number; cy: number }; score: string }) => {
@@ -52,49 +53,36 @@ export default function DashboardHome() {
             try {
                 setIsLoading(true);
 
-                const { data: trafficOverview } = await supabase
-                    .from('traffic_overview')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .order('created_at', { ascending: true })
-                    .limit(7);
+                const [trafficOverview, activity, datasets] = await Promise.all([
+                    getAll<TrafficOverview>(user.uid, "traffic_overview"),
+                    getLatest<ActivityHistory>(user.uid, "activity_history", 5),
+                    getAll<Dataset>(user.uid, "datasets"),
+                ]);
 
-                if (trafficOverview) setTrafficData(trafficOverview);
+                // Chart shows the earliest 7 periods, ordered by time.
+                const sortedTraffic = [...trafficOverview].sort(
+                    (a, b) => a.created_at - b.created_at,
+                );
+                setTrafficData(sortedTraffic.slice(0, 7));
 
-                const { data: activity } = await supabase
-                    .from('activity_history')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .order('created_at', { ascending: false })
-                    .limit(5);
+                // Most recent activity first.
+                setRecentActivity(
+                    [...activity].sort((a, b) => b.created_at - a.created_at),
+                );
 
-                if (activity) setRecentActivity(activity);
-
-                const { count: datasetCount } = await supabase
-                    .from('datasets')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_id', user.id);
-
-                const { count: attacksCount } = await supabase
-                    .from('botnet_results')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_id', user.id)
-                    .eq('prediction', 'MALICIOUS');
-
-                const { count: totalRecordsCount } = await supabase
-                    .from('botnet_results')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_id', user.id);
-
-                const malicious = attacksCount || 0;
-                const total     = totalRecordsCount || 0;
+                // Aggregate totals from per-dataset traffic overviews. Each
+                // overview row records the normal/attack counts for one dataset,
+                // so summing them yields the same totals as counting results.
+                const malicious = trafficOverview.reduce((sum, t) => sum + (t.attacks || 0), 0);
+                const normal    = trafficOverview.reduce((sum, t) => sum + (t.normal || 0), 0);
+                const total     = malicious + normal;
 
                 setStats({
-                    totalDatasets:   datasetCount || 0,
+                    totalDatasets:   datasets.length,
                     attacksDetected: malicious,
                     totalRecords:    total,
                     detectionRate:   total > 0 ? ((malicious / total) * 100).toFixed(1) : "0.0",
-                    normalTraffic:   total - malicious,
+                    normalTraffic:   normal,
                 });
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);

@@ -29,14 +29,15 @@ import {
 } from "recharts";
 import { ShieldCheck, AlertTriangle, CheckCircle, Loader2, Search, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+import { getAll, getLatest } from "@/lib/db";
+import type { BotnetResult, TrafficOverview } from "@/lib/db";
 
 type ResultRow = {
     id: string;
     ip: string;
     prediction: string;
     confidence: number;
-    created_at: string;
+    created_at: number;
 };
 
 export default function Results() {
@@ -56,26 +57,23 @@ export default function Results() {
         if (!user) return;
         const load = async () => {
             setIsLoading(true);
-            const [totalRes, maliciousRes, rowsRes] = await Promise.all([
-                supabase
-                    .from("botnet_results")
-                    .select("*", { count: "exact", head: true })
-                    .eq("user_id", user.id),
-                supabase
-                    .from("botnet_results")
-                    .select("*", { count: "exact", head: true })
-                    .eq("user_id", user.id)
-                    .eq("prediction", "MALICIOUS"),
-                supabase
-                    .from("botnet_results")
-                    .select("*")
-                    .eq("user_id", user.id)
-                    .order("created_at", { ascending: false })
-                    .limit(1000),
+            const [trafficOverview, latestResults] = await Promise.all([
+                getAll<TrafficOverview>(user.uid, "traffic_overview"),
+                getLatest<BotnetResult>(user.uid, "botnet_results", 1000),
             ]);
-            setTotalCount(totalRes.count ?? 0);
-            setMaliciousCount(maliciousRes.count ?? 0);
-            if (rowsRes.data) setTableRows(rowsRes.data as ResultRow[]);
+
+            // Totals are aggregated from the per-dataset traffic overviews.
+            const malicious = trafficOverview.reduce((sum, t) => sum + (t.attacks || 0), 0);
+            const normal    = trafficOverview.reduce((sum, t) => sum + (t.normal || 0), 0);
+
+            // Newest results first for the table.
+            const rows = [...latestResults].sort(
+                (a, b) => b.created_at - a.created_at,
+            );
+
+            setTotalCount(malicious + normal);
+            setMaliciousCount(malicious);
+            setTableRows(rows as ResultRow[]);
             setIsLoading(false);
         };
         load();
@@ -136,7 +134,7 @@ export default function Results() {
         <div className="flex flex-col gap-6 relative z-10">
             <PageHeader
                 heading="Botnet Detection Results"
-                description={`Analysis results for ${user?.user_metadata?.full_name || "User"}.`}
+                description={`Analysis results for ${user?.displayName || "User"}.`}
             />
 
             <div className="grid gap-4 md:grid-cols-3">

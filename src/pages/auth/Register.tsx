@@ -14,8 +14,32 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Link, useNavigate } from "react-router-dom"
-import { supabase } from "@/lib/supabase"
+import {
+    createUserWithEmailAndPassword,
+    updateProfile,
+    signInWithPopup,
+} from "firebase/auth"
+import { FirebaseError } from "firebase/app"
+import { auth, googleProvider } from "@/lib/firebase"
 import { Loader2 } from "lucide-react"
+
+function authErrorMessage(error: unknown): string {
+    if (error instanceof FirebaseError) {
+        switch (error.code) {
+            case "auth/email-already-in-use":
+                return "User already exists"
+            case "auth/weak-password":
+                return "Password must be at least 6 characters."
+            case "auth/invalid-email":
+                return "Invalid email address."
+            case "auth/popup-closed-by-user":
+                return "Sign-in popup was closed before completing."
+            default:
+                return error.message
+        }
+    }
+    return "Unexpected error. Please try again."
+}
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -66,46 +90,33 @@ export default function Register() {
         setError(null)
         setSuccessMessage(null)
 
-        const { data, error } = await supabase.auth.signUp({
-            email: values.email,
-            password: values.password,
-            options: {
-                data: {
-                    full_name: values.name,
-                }
-            }
-        })
+        try {
+            const { user } = await createUserWithEmailAndPassword(
+                auth,
+                values.email,
+                values.password,
+            )
+            // Persist the full name on the Firebase user profile.
+            await updateProfile(user, { displayName: values.name })
 
-        setLoading(false)
-
-        if (error) {
-            setError(error.message)
-            return
-        }
-
-        if (data.user?.identities?.length === 0) {
-           setError("User already exists")
-           return
-        }
-
-        if (data.session) {
+            // createUserWithEmailAndPassword signs the user in automatically.
             navigate("/dashboard")
-        } else {
-            setSuccessMessage("Registration successful! You can now log in.")
+        } catch (err) {
+            setError(authErrorMessage(err))
+        } finally {
+            setLoading(false)
         }
     }
 
     async function signUpWithGoogle() {
         setGoogleLoading(true)
         setError(null)
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            },
-        })
-        if (error) {
-            setError(error.message)
+        try {
+            await signInWithPopup(auth, googleProvider)
+            navigate("/dashboard")
+        } catch (err) {
+            setError(authErrorMessage(err))
+        } finally {
             setGoogleLoading(false)
         }
     }

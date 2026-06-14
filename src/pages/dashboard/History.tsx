@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+import { getAll } from "@/lib/db";
+import type { ActivityHistory } from "@/lib/db";
 import { Loader2, Monitor, Smartphone } from "lucide-react";
 
 export default function History() {
@@ -23,15 +24,9 @@ export default function History() {
             if (!user) return;
             try {
                 setIsLoading(true);
-                const { data, error } = await supabase
-                    .from('activity_history')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .order('created_at', { ascending: false });
-                
-                if (data) {
-                    setHistoryData(data);
-                }
+                const data = await getAll<ActivityHistory>(user.uid, "activity_history");
+                // Most recent first.
+                setHistoryData([...data].sort((a, b) => b.created_at - a.created_at));
             } catch (error) {
                 console.error("Error fetching history:", error);
             } finally {
@@ -78,7 +73,7 @@ export default function History() {
                                     <TableRow key={index}>
                                         <TableCell>{new Date(row.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell className="text-muted-foreground">{new Date(row.created_at).toLocaleTimeString()}</TableCell>
-                                        <TableCell>{user?.user_metadata?.full_name || 'User'}</TableCell>
+                                        <TableCell>{user?.displayName || 'User'}</TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{row.action}</Badge>
                                         </TableCell>

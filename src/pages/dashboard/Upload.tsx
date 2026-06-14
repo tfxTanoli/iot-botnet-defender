@@ -17,7 +17,7 @@ import {
     ShieldCheck, ShieldAlert, XCircle, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+import { addRecord, addRecords } from "@/lib/db";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
@@ -218,39 +218,37 @@ export default function Upload() {
         }
     };
 
-    // ── save to Supabase ─────────────────────────────────────────────────────
-    const saveToSupabase = async (data: AnalysisResponse) => {
+    // ── save to Realtime Database ────────────────────────────────────────────
+    const saveResults = async (data: AnalysisResponse) => {
         if (!user || !file) return;
+        const uid = user.uid;
 
         setStatusMsg("Saving dataset record…");
-        await supabase.from("datasets").insert({
-            user_id:    user.id,
+        await addRecord(uid, "datasets", {
             filename:   data.filename,
             size_bytes: file.size,
         });
 
         setStatusMsg("Saving detection results…");
         const rows = data.results.map((r) => ({
-            user_id:    user.id,
             ip:         r.ip,
             prediction: r.prediction,
             confidence: r.confidence,
         }));
+        // Persist in batches to keep the UI responsive on large datasets.
         for (let i = 0; i < rows.length; i += CHUNK) {
-            await supabase.from("botnet_results").insert(rows.slice(i, i + CHUNK));
+            await addRecords(uid, "botnet_results", rows.slice(i, i + CHUNK));
         }
 
         setStatusMsg("Updating traffic overview…");
-        await supabase.from("traffic_overview").insert({
-            user_id: user.id,
+        await addRecord(uid, "traffic_overview", {
             name:    data.filename.replace(/\.csv$/i, ""),
             normal:  data.normal,
             attacks: data.malicious,
         });
 
         setStatusMsg("Logging activity…");
-        await supabase.from("activity_history").insert({
-            user_id:     user.id,
+        await addRecord(uid, "activity_history", {
             action:      "Dataset Analyzed",
             details:     `${data.filename}: ${data.total} records, ${data.malicious} malicious detected`,
             device_type: data.device_type,
@@ -282,7 +280,7 @@ export default function Upload() {
             }
 
             const data: AnalysisResponse = await res.json();
-            await saveToSupabase(data);
+            await saveResults(data);
             setAnalysis(data);
             setStatusMsg("");
         } catch (err: unknown) {

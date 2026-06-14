@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# IoT Botnet Defender
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite dashboard for IoT botnet detection. Authentication and
+data storage are powered by **Firebase** (Firebase Auth + Realtime Database).
+Dataset analysis runs on a separate FastAPI backend.
 
-Currently, two official plugins are available:
+## Tech stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Auth:** Firebase Authentication (Email/Password + Google OAuth)
+- **Database:** Firebase Realtime Database (per-user data, secured by rules)
+- **Frontend:** React 19, Vite, Tailwind, Recharts
+- **Backend:** FastAPI autoencoder service (see `../backend`)
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. Install dependencies
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Configure environment
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Copy `.env.example` to `.env.local` and fill in your Firebase web config:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cp .env.example .env.local
 ```
+
+All credentials are read from `VITE_FIREBASE_*` environment variables — nothing
+is hard-coded. Find these in the Firebase console under
+**Project settings → General → Your apps → SDK setup and configuration**.
+
+> `VITE_FIREBASE_DATABASE_URL` is **not** part of the basic config snippet. Copy
+> it from **Realtime Database** in the console (e.g.
+> `https://<project-id>-default-rtdb.firebaseio.com`).
+
+### 3. Enable Firebase services
+
+In the Firebase console for the `iot-botnet-detector` project:
+
+1. **Authentication → Sign-in method** → enable **Email/Password** and **Google**.
+2. **Authentication → Settings → Authorized domains** → add `localhost` and your
+   production domain.
+3. **Realtime Database** → create a database.
+
+### 4. Deploy the database security rules
+
+The rules in `database.rules.json` deny all access by default and grant each
+authenticated user access only to their own subtree (`users/{uid}`):
+
+```bash
+npm install -g firebase-tools
+firebase login
+firebase deploy --only database --project iot-botnet-detector
+```
+
+## Develop
+
+```bash
+npm run dev      # start the Vite dev server
+npm run build    # type-check + production build
+npm run lint     # eslint
+```
+
+## Data model (Realtime Database)
+
+```
+users/
+  {uid}/
+    datasets/          # uploaded dataset records
+    botnet_results/    # per-record predictions
+    traffic_overview/  # per-dataset normal/attack aggregates
+    activity_history/  # audit log
+    active_threats/    # ongoing threats
+```
+
+Every record stores a numeric `created_at` (epoch ms) used for ordering.

@@ -28,7 +28,7 @@ export function Header() {
     };
 
     const userEmail    = user?.email || "No Email";
-    const userFullName = user?.user_metadata?.full_name || "IoT User";
+    const userFullName = user?.displayName || "IoT User";
     const initials     = userFullName.substring(0, 2).toUpperCase();
 
     return (
